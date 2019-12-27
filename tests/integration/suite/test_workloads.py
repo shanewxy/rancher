@@ -1,7 +1,7 @@
 from .common import random_str
 from rancher import ApiError
-
 import time
+import datetime
 import pytest
 
 
@@ -308,6 +308,31 @@ def test_statefulset_workload_volumemount_subpath(admin_pc):
                       volumes=volumes)
 
         assert e.value.error.status == 422
+
+
+def test_workload_redeploy(admin_pc):
+    client = admin_pc.client
+    ns = admin_pc.cluster.client.create_namespace(
+        name=random_str(),
+        projectId=admin_pc.project.id)
+    name = random_str()
+    workload = client.create_workload(
+        name=name,
+        namespaceId=ns.id,
+        scale=1,
+        containers=[{
+            'name': 'one',
+            'image': 'nginx',
+        }],
+        annotations={
+            "cattle.io/timestamp":
+                datetime.datetime.now().isoformat()}, )
+    client.action(workload, "redeploy")
+    timestamp = client.list_workload(
+        uuid=workload.uuid).data[0].annotations["cattle.io/timestamp"]
+    assert timestamp != workload.annotations["cattle.io/timestamp"]
+    client.delete(workload)
+    admin_pc.cluster.client.delete(ns)
 
 
 def wait_for_service_create(client, name, timeout=30):
