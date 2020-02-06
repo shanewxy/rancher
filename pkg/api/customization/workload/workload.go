@@ -31,6 +31,10 @@ const (
 	DeprecatedRollbackTo = "deprecated.deployment.rollback.to"
 )
 
+var (
+	allowRedeployTypes = map[string]bool{"cronJob": true, "deployment": true, "replicationController": true, "statefulSet": true, "daemonSet": true, "replicaSet": true}
+)
+
 type ActionWrapper struct {
 	ClusterManager *clustermanager.Manager
 }
@@ -239,9 +243,8 @@ func Formatter(apiContext *types.APIContext, resource *types.RawResource) {
 	resource.Links["self"] = apiContext.URLBuilder.ResourceLinkByID(workloadSchema, workloadID)
 	resource.Links["remove"] = apiContext.URLBuilder.ResourceLinkByID(workloadSchema, workloadID)
 	resource.Links["update"] = apiContext.URLBuilder.ResourceLinkByID(workloadSchema, workloadID)
-	resourceType := resource.Type
 	//add redeploy action to the workload types that support redeploy
-	if resourceType != "job" && resourceType != "pod" {
+	if _, ok := allowRedeployTypes[resource.Type]; ok {
 		resource.Actions["redeploy"] = apiContext.URLBuilder.ActionLinkByID(workloadSchema, workloadID, "redeploy")
 	}
 
