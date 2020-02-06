@@ -310,11 +310,12 @@ def test_statefulset_workload_volumemount_subpath(admin_pc):
         assert e.value.error.status == 422
 
 
-def test_workload_redeploy(admin_pc):
+def test_workload_redeploy(admin_pc, remove_resource):
     client = admin_pc.client
     ns = admin_pc.cluster.client.create_namespace(
         name=random_str(),
         projectId=admin_pc.project.id)
+    remove_resource(ns)
     name = random_str()
     workload = client.create_workload(
         name=name,
@@ -327,6 +328,8 @@ def test_workload_redeploy(admin_pc):
         annotations={
             "cattle.io/timestamp":
                 datetime.datetime.now().isoformat()}, )
+    remove_resource(workload)
+    workload = wait_for_workload_active(client, workload)
     client.action(workload, "redeploy")
     timestamp = client.list_workload(
         uuid=workload.uuid).data[0].annotations["cattle.io/timestamp"]
@@ -366,3 +369,19 @@ def wait_for_service_cluserip_reset(client, name, timeout=30):
         if time.time() - start > timeout:
             raise Exception('Timeout waiting for workload service')
     return services.data[0]
+
+
+def wait_for_workload_active(client, workload, timeout=30):
+    start = time.time()
+    workloads = client.list_workload(uuid=workload.uuid).data
+    assert len(workloads) == 1
+    workload = workloads[0]
+    while workload.state != "active":
+        if time.time() - start > timeout:
+            raise AssertionError(
+                "Timed out waiting for workload active")
+        time.sleep(.5)
+        workloads = client.list_workload(uuid=workload.uuid).data
+        assert len(workloads) == 1
+        workload = workloads[0]
+    return workload
