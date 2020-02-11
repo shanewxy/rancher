@@ -226,9 +226,18 @@ var MatchTemplate = `
 	protocol {{.GraylogConfig.Protocol}}
 	{{- if .GraylogConfig.EnableTLS }}
 	tls true
+	tls_options {"all_ciphers": "true", 
+	{{- if and .GraylogConfig.ClientCert .GraylogConfig.ClientKey}}
+	"cert": "{{.CertFilePrefix}}_client-cert.pem", "key": "{{.CertFilePrefix}}_client-key.pem",
 	{{end}}
-	{{- if and .GraylogConfig.ClientCert .GraylogConfig.ClientKey}}   
-	tls_options {"cert": "{{.CertFilePrefix}}_client-cert.pem", "key": "{{.CertFilePrefix}}_client-key.pem", "all_ciphers": "true", "no_verify": "true"}
+	{{- if eq .GraylogConfig.SSLVerify false}}
+	"no_verify": "true"}
+	{{else}}
+	{{- if .GraylogConfig.Certificate}}
+	"ca": "{{.CertFilePrefix}}_ca.pem",
+	{{end}}
+	"no_verify": "false"}
+	{{end}}
 	{{end}}
 {{end}}
 {{end}}

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	graylogTestData = []byte(`{ "version": "1.1", "host": "rancher", "short_message": "A short message", "level": 5, "_some_info": "foo" }`)
+	graylogTestData = []byte(`{ "version": "1.1", "host": "rancher", "level": 5, "short_message": "` + testMessage + `"}`)
 )
 
 type graylogTestWrap struct {
