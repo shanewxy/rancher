@@ -3,6 +3,18 @@ from .common import random_str
 
 endpoint_host = "rancher.com"
 endpoint_port = "24224"
+tls_config = {
+    "endpoint": endpoint_host + ":" + endpoint_port,
+    "protocol": "tcp",
+    "enableTls": True,
+    "sslVerify": True,
+    "certificate": "-----BEGIN CERTIFICATE-----\
+                            ----END CERTIFICATE-----",
+    "clientCert": "-----BEGIN CERTIFICATE-----\
+                            ----END CERTIFICATE-----",
+    "clientKey": "-----BEGIN PRIVATE KEY-----\
+                            ----END PRIVATE KEY-----",
+}
 
 
 def test_project_graylog_config(admin_mc, admin_pc, remove_resource):
@@ -23,17 +35,6 @@ def test_project_graylog_config(admin_mc, admin_pc, remove_resource):
                'endpoint'] == endpoint_host + ":" + endpoint_port
     assert project_logging.graylogConfig['protocol'] == 'udp'
 
-    tls_config = {
-        "endpoint": endpoint_host + ":" + endpoint_port,
-        "protocol": "tcp",
-        "enableTls": True,
-        "certificate": "-----BEGIN CERTIFICATE-----\
-                            ----END CERTIFICATE-----",
-        "clientCert": "-----BEGIN CERTIFICATE-----\
-                            ----END CERTIFICATE-----",
-        "clientKey": "-----BEGIN PRIVATE KEY-----\
-                            ----END PRIVATE KEY-----",
-    }
     client.update_by_id_project_logging(id=project_logging.id,
                                         name=project_logging.name,
                                         projectId=project.id,
@@ -44,6 +45,7 @@ def test_project_graylog_config(admin_mc, admin_pc, remove_resource):
     # test whether config is successfully updated
     assert generated_config["protocol"] == "tcp"
     assert generated_config["enableTls"] is True
+    assert generated_config["sslVerify"] is True
 
 
 def test_cluster_graylog_config(admin_mc, remove_resource):
@@ -63,17 +65,6 @@ def test_cluster_graylog_config(admin_mc, remove_resource):
                'endpoint'] == endpoint_host + ":" + endpoint_port
     assert cluster_logging.graylogConfig['protocol'] == 'udp'
 
-    tls_config = {
-        "endpoint": endpoint_host + ":" + endpoint_port,
-        "protocol": "tcp",
-        "enableTls": True,
-        "certificate": "-----BEGIN CERTIFICATE-----\
-                            ----END CERTIFICATE-----",
-        "clientCert": "-----BEGIN CERTIFICATE-----\
-                            ----END CERTIFICATE-----",
-        "clientKey": "-----BEGIN PRIVATE KEY-----\
-                            ----END PRIVATE KEY-----",
-    }
     client.update_by_id_cluster_logging(id=cluster_logging.id,
                                         name=cluster_logging.name,
                                         clusterId='local',
@@ -85,12 +76,13 @@ def test_cluster_graylog_config(admin_mc, remove_resource):
     # test whether config is successfully updated
     assert generated_config["protocol"] == "tcp"
     assert generated_config["enableTls"] is True
+    assert generated_config["sslVerify"] is True
 
 
-def wait_for_project_logging(client, projectId, timeout=30):
+def wait_for_project_logging(client, project_id, timeout=30):
     start = time.time()
     interval = 0.5
-    project_loggings = client.list_project_logging(projectId=projectId).data
+    project_loggings = client.list_project_logging(projectId=project_id).data
 
     while len(project_loggings) == 0:
         if time.time() - start > timeout:
@@ -98,15 +90,15 @@ def wait_for_project_logging(client, projectId, timeout=30):
         time.sleep(interval)
         interval *= 2
         project_loggings = client.list_project_logging(
-            projectId=projectId).data
+            projectId=project_id).data
 
     return project_loggings[0]
 
 
-def wait_for_cluster_logging(client, clusterId, timeout=30):
+def wait_for_cluster_logging(client, cluster_id, timeout=30):
     start = time.time()
     interval = 0.5
-    cluster_loggings = client.list_cluster_logging(clusterId=clusterId).data
+    cluster_loggings = client.list_cluster_logging(clusterId=cluster_id).data
 
     while len(cluster_loggings) == 0:
         if time.time() - start > timeout:
@@ -114,6 +106,6 @@ def wait_for_cluster_logging(client, clusterId, timeout=30):
         time.sleep(interval)
         interval *= 2
         cluster_loggings = client.list_cluster_logging(
-            clusterId=clusterId).data
+            clusterId=cluster_id).data
 
     return cluster_loggings[0]
